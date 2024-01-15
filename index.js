@@ -9,6 +9,7 @@ const User = require('./models/User');
 const Message = require('./models/Message');
 const ws = require('ws');
 const fs = require('fs');
+const port = process.env.PORT || 5000;
 
 dotenv.config();
 
@@ -44,11 +45,11 @@ async function getUserDataFromRequest(req) {
 
 }
 // ------------- testing the server ------------
-app.get('/test', (req,res) => {
-  res.json('test ok');
+app.get('/', (req,res) => {
+  res.json('chat application server is running');
 });
 
-
+// ----------- load messages from database ----------
 app.get('/messages/:userId', async (req,res) => {
   const {userId} = req.params;
   const userData = await getUserDataFromRequest(req);
@@ -77,6 +78,7 @@ app.get('/profile', (req,res) => {
   }
 });
 
+// ---------- login user -----------
 app.post('/login', async (req,res) => {
   const {username, password} = req.body;
   const foundUser = await User.findOne({username});
@@ -92,6 +94,7 @@ app.post('/login', async (req,res) => {
   }
 });
 
+// ----------- logout user ---------------
 app.post('/logout', (req,res) => {
   res.cookie('token', '', {sameSite:'none', secure:true}).json('ok');
 });
@@ -118,7 +121,9 @@ app.post('/register', async (req,res) => {
 });
 
 // -------------- backend server port -------------------
-const server = app.listen(5000);
+const server = app.listen(port,()=>{
+  console.log( `chat application server is running on ${port}`)
+});
 
 
 // --------------- web socket server ----------------
@@ -151,7 +156,7 @@ wss.on('connection', (connection, req) => {
     clearTimeout(connection.deathTimer);
   });
 
-  // read username and id form the cookie for this connection
+  // ----- read username and id form the cookie for this connection ------
   const cookies = req.headers.cookie;
   if (cookies) {
     const tokenCookieString = cookies.split(';').find(str => str.startsWith('token='));
@@ -205,6 +210,6 @@ wss.on('connection', (connection, req) => {
   });
 
 
-  // notify everyone about online people (when someone connects)
+  //------ notify everyone about online people (when someone connects) -------
   notifyAboutOnlinePeople();
 });
